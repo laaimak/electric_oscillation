@@ -29,13 +29,15 @@ $I_{0} = \cfrac{E_{0} \cdot \cos{(\omega t - \theta)}}{\sqrt{R^{2} + \Big(\omega
 $\\ \cfrac{d^2V}{dt^2} + \cfrac{1}{R} \cdot \cfrac{dV}{dt} + \cfrac{V}{L} = I_{0}\sin{(\omega t)}$,  
 где V - напряжение, t - время, L - индуктивность, R - сопротивление, С - емксоть конденсатора.
 
-Для численного дифференцирования преобразуем уравнение в систему уравнений первого порядка:$\\$
-$
-  \begin{cases}
-    dV = \cfrac{dV}{dt}      \\
-    d^{2}Vd^{2}t = \cfrac{I_{0} \cos{(\omega t)}}{C} - (2\beta \cdot \cfrac{dV}{dt}) - (\omega_{0}^{2} \cdot V)  
-  \end{cases}
-\\$
+Для численного дифференцирования преобразуем уравнение в систему уравнений первого порядка:
+
+\[
+\begin{cases} 
+\frac{dq}{dt} = I \\ 
+\frac{dI}{dt} = \frac{E_{0}\cos{(\omega t)}}{L} - 2\beta I - \omega_{0}^{2}q 
+\end{cases}
+\]
+
 Соответсвенно для начальных условий нужно задать $V_{0}$ и $V/dt_{0}$. Они задаются по формулам:$\\$
 $V_{0} = \cfrac{I_{0} \cos{(\omega t + \varphi)}}{\omega \sqrt{R^{-2} + \bigg(\omega C - (\omega L)^{-1} \bigg)^{2}}}\\$
 После дифференцирования получаем:$\\$
