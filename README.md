@@ -14,11 +14,13 @@ $\\ \cfrac{d^2q}{dt^2} + 2\beta\cfrac{dq}{dt} + \omega_{0}^{2}q = \cfrac{E_{0}}{
 
 ![image.png](images/image.png) 
 
-Соответсвенно для начальных условий нужно задать $q_{0}$ и $I_{0}$. Они задаются по формулам:$\\$
-$q_{0} = \cfrac{E_{0} \cdot \cos{(\omega t + \varphi)}}{\omega\sqrt{R^{2} + \Big(\omega L - \cfrac{1}{\omega C}\Big)^{2}}}$ $\\$
-После дифференцирования получаем уравнение для тока:$\\$
-$I_{0} = \cfrac{E_{0} \cdot \cos{(\omega t - \theta)}}{\sqrt{R^{2} + \Big(\omega L - \cfrac{1}{\omega C}\Big)^{2}}}$, $\\$
- где $\varphi = \arctan\Bigg(\cfrac{R}{\omega L - \cfrac{1}{\omega C}}\Bigg)$ и $\theta = -(\varphi + \cfrac{\pi}{2})\\$
+Соответсвенно для начальных условий нужно задать $q_{0}$ и $I_{0}$. Они задаются по формулам:
+
+![image1.png](images/image1.png) 
+
+После дифференцирования получаем уравнение для тока:
+
+![image2.png](images/image2.png) 
 
 ## Описание параллельной цепи
 Для параллельной RLC цепи было взято и преобразованно диффиринциальное уравнение 2 порядка:
@@ -26,18 +28,12 @@ $\\ \cfrac{d^2V}{dt^2} + \cfrac{1}{R} \cdot \cfrac{dV}{dt} + \cfrac{V}{L} = I_{0
 где V - напряжение, t - время, L - индуктивность, R - сопротивление, С - емксоть конденсатора.
 
 Для численного дифференцирования преобразуем уравнение в систему уравнений первого порядка:
-$\\
-  \begin{cases}
-    dV = \cfrac{dV}{dt}      \\
-    d^{2}Vd^{2}t = \cfrac{I_{0} \cos{(\omega t)}}{C} - (2\beta \cdot \cfrac{dV}{dt}) - (\omega_{0}^{2} \cdot V)  
-  \end{cases}
-\\$
-Соответсвенно для начальных условий нужно задать $V_{0}$ и $V/dt_{0}$. Они задаются по формулам:$\\$
-$V_{0} = \cfrac{I_{0} \cos{(\omega t + \varphi)}}{\omega \sqrt{R^{-2} + \bigg(\omega C - (\omega L)^{-1} \bigg)^{2}}}\\$
-После дифференцирования получаем:$\\$
-$dVdt_{0} = \cfrac{I_{0} \cos{(\omega t + \varphi)}}{\sqrt{R^{-2} + \bigg(\omega C - (\omega L)^{-1} \bigg)^{2}}},\\$ 
 
-где $\varphi = \arctan\Bigg(\cfrac{R}{\omega L} - \omega C R\Bigg)\\$
+![image3.png](images/image3.png) 
+
+Соответсвенно для начальных условий нужно задать $V_{0}$ и $V/dt_{0}$. Они задаются по формулам:
+
+![image4.png](images/image4.png) 
 
 К конечным результатам был применен шум, реализованный как случайное число в нормальном распределении c параметрами 0 и 0.5.
 
