@@ -11,13 +11,9 @@ $\\ \cfrac{d^2q}{dt^2} + 2\beta\cfrac{dq}{dt} + \omega_{0}^{2}q = \cfrac{E_{0}}{
 где q - заряд, t - время, $E_{0}$ - амплитуда напряжения, L - индуктивность, R - сопротивление, С - емксоть конденсатора, $2\beta = \cfrac{R}{L}$, $\omega_{0}^{2} = \cfrac{1}{LC}$
 
 Для численного дифференцирования преобразуем уравнение в систему уравнений первого порядка:
-$\\$
-$
-  \begin{cases}
-    \cfrac{dq}{dt} = I      \\
-    \cfrac{dI}{dt} = \cfrac{E_{0}\cos{(\omega t)}}{L} - 2\beta I - \omega_{0}^{2}q  
-  \end{cases}
-\\$
+
+![image.png](images/image.png) 
+
 Соответсвенно для начальных условий нужно задать $q_{0}$ и $I_{0}$. Они задаются по формулам:$\\$
 $q_{0} = \cfrac{E_{0} \cdot \cos{(\omega t + \varphi)}}{\omega\sqrt{R^{2} + \Big(\omega L - \cfrac{1}{\omega C}\Big)^{2}}}$ $\\$
 После дифференцирования получаем уравнение для тока:$\\$
@@ -49,26 +45,26 @@ $dVdt_{0} = \cfrac{I_{0} \cos{(\omega t + \varphi)}}{\sqrt{R^{-2} + \bigg(\omega
 
 ### 1:
 
-![1.png](images/1-1.png) 
+![1-1.png](images/1-1.png) 
 
-![1data.png](images/1.png)
+![1.png](images/1.png)
 
 ### 2:
 
-![2.png](images/2-2.png) 
+![2-2.png](images/2-2.png) 
 
-![2data.png](images/2.png)
+![2.png](images/2.png)
 
 
 ### 3:
 
-![3.png](images/3-3.png) 
+![3-3.png](images/3-3.png) 
 
-![3data.png](images/3.png)
+![3.png](images/3.png)
 
 
 ### 4:
 
-![4.png](images/4-4.png) 
+![4-4.png](images/4-4.png) 
 
-![4data.png](images/4.png)
+![4.png](images/4.png)
