@@ -1,22 +1,15 @@
-from math import *
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import least_squares
-from numpy.ma.core import arctan
+from numpy.random import uniform
 from time import sleep
 
 # Параметры параллельного контура
 R_true = 11          # Сопротивление в Омах
 L_true = 100         # Индуктивность в Генри
 C_true = 0.015       # Емкость в Фарадах
-I0_const = 0.05 # Амплитуда источника тока
-w = 0.09        # Угловая частота источника тока
-E0_const = 400
-
-# Генерация возмущений на параметры
-R_obs = R_true * 1.01  # +1% к R
-L_obs = L_true * 1.01  # +1% к L
-C_obs = C_true * 1.01  # +1% к C
+I0_const = 0.05      # Амплитуда источника тока
+w = 0.09             # Угловая частота источника тока
+E0_const = 400       # Амплитуда источника напряжения
 
 # Функции производных для напряжения и тока
 def derivatives_U(state, t, R, L, C):
@@ -24,7 +17,7 @@ def derivatives_U(state, t, R, L, C):
     b = 1 / (2 * R * C)
     w02 = 1 / (L * C)
     dV = dVdt
-    ddVdt = (I0_const * cos(w * t) / C) - (2 * b * dVdt) - (w02 * V)
+    ddVdt = (I0_const * np.cos(w * t) / C) - (2 * b * dVdt) - (w02 * V)
     return np.array([dV, ddVdt])
 
 def derivatives_I(state, t, R, L, C):
@@ -32,41 +25,33 @@ def derivatives_I(state, t, R, L, C):
     b = R / (2 * L)
     w02 = 1 / (L * C)
     dq = I
-    dI = (E0_const * cos(w * t) / L) - (2 * b * I) - (w02 * q)
+    dI = (E0_const * np.cos(w * t) / L) - (2 * b * I) - (w02 * q)
     return np.array([dq, dI])
 
 # Шаг Рунге-Кутты 4-го порядка
-def rk4_step_U(state, h, t, R, L, C):
-    k1 = derivatives_U(state, t, R, L, C)
-    k2 = derivatives_U(state + h * 1/2 * k1, t + h * 1/2, R, L, C)
-    k3 = derivatives_U(state + h * 1/2 * k2, t + h * 1/2, R, L, C)
-    k4 = derivatives_U(state + h * 1 * k3, t + h * 1, R, L, C)
-    return state + h * (1/6 * k1 + 1/3 * k2 + 1/3 * k3 + 1/6 * k4)
-
-def rk4_step_I(state, h, t, R, L, C):
-    k1 = derivatives_I(state, t, R, L, C)
-    k2 = derivatives_I(state + h * 1/2 * k1, t + h * 1/2, R, L, C)
-    k3 = derivatives_I(state + h * 1/2 * k2, t + h * 1/2, R, L, C)
-    k4 = derivatives_I(state + h * 1 * k3, t + h * 1, R, L, C)
-    return state + h * (1/6 * k1 + 1/3 * k2 + 1/3 * k3 + 1/6 * k4)
+def rk4_step(func, state, h, t, R, L, C):
+    k1 = func(state, t, R, L, C)
+    k2 = func(state + h * 0.5 * k1, t + 0.5 * h, R, L, C)
+    k3 = func(state + h * 0.5 * k2, t + 0.5 * h, R, L, C)
+    k4 = func(state + h * k3, t + h, R, L, C)
+    return state + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6
 
 # Начальные условия
-def initial_conditions(R,L,C):
-    phi_U = arctan((1 / (w * L) - w * C) * R)
-    dVdt0 = I0_const * cos(w * 0 + phi_U) / (sqrt(1 / R**2 + pow((w * C - 1 / (w * L)), 2)))
-    V0 = I0_const * cos(w * 0 + phi_U) / (w * sqrt(1 / R**2 + pow((w * C - 1 / (w * L)), 2)))
+def initial_conditions(R, L, C):
+    phi_U = np.arctan((1 / (w * L) - w * C) * R)
+    dVdt0 = I0_const * np.cos(w * 0 + phi_U) / np.sqrt(1 / R**2 + (w * C - 1 / (w * L))**2)
+    V0 = I0_const * np.cos(w * 0 + phi_U) / (w * np.sqrt(1 / R**2 + (w * C - 1 / (w * L))**2))
 
-    phi_I = arctan(R / (w * L - 1 / (w * C)))
-    omega_I = -(phi_I + pi / 2)
-    I0 = E0_const * cos(w * 0 - omega_I) / (sqrt(pow(R, 2) + pow((w * L - 1 / (w * C)), 2)))
-    q0 = E0_const * cos(w * 0 + phi_I) / (w * sqrt(pow(R, 2) + pow((w * L - 1 / (w * C)), 2)))
+    phi_I = np.arctan(R / (w * L - 1 / (w * C)))
+    omega_I = -(phi_I + np.pi / 2)
+    I0 = E0_const * np.cos(w * 0 - omega_I) / np.sqrt(R**2 + (w * L - 1 / (w * C))**2)
+    q0 = E0_const * np.cos(w * 0 + phi_I) / (w * np.sqrt(R**2 + (w * L - 1 / (w * C))**2))
     return [V0, dVdt0], [q0, I0]
 
-# Функция для расчета невязок
-def residuals(params, t, observed_I, observed_U):
-    R, L, C = params
-    V0, dVdt0 = initial_conditions(R,L,C)[0]
-    q0, I0 = initial_conditions(R,L,C)[1]
+# Генерация "наблюдаемых" данных
+def generate_data(t, R, L, C):
+    V0, dVdt0 = initial_conditions(R, L, C)[0]
+    q0, I0 = initial_conditions(R, L, C)[1]
 
     results_U = np.zeros((len(t), 2))
     results_I = np.zeros((len(t), 2))
@@ -74,63 +59,89 @@ def residuals(params, t, observed_I, observed_U):
     results_I[0] = [q0, I0]
 
     for i in range(1, len(t)):
-        results_I[i] = rk4_step_I(results_I[i - 1], h, t[i], R, L, C)
-        results_U[i] = rk4_step_U(results_U[i - 1], h, t[i], R, L, C)
+        results_I[i] = rk4_step(derivatives_I, results_I[i - 1], h, t[i], R, L, C)
+        results_U[i] = rk4_step(derivatives_U, results_U[i - 1], h, t[i], R, L, C)
 
-    model_I = results_I[:, 0]
-    model_U = results_U[:, 0]
-    line_model.set_ydata(results_I[:, 0])
-    line_model2.set_ydata(results_U[:, 0])
-    plt.title(f"R={params[0]:.4f}, L={params[1]:.4f}, C={params[2]:.6f}")
-    plt.pause(0.1)
-    # print([observed_I - model_I, observed_U - model_U])
-    return np.concatenate([observed_I - model_I, observed_U - model_U])
+    return results_I[:, 0], results_U[:, 0]
+
+# Решение системы линейных уравнений через LU-разложение
+def solve_linear_system(A, b):
+    n = len(b)
+    L = np.zeros((n, n))
+    U = np.zeros((n, n))
+
+    for i in range(n):
+        for k in range(i, n):
+            U[i, k] = A[i, k] - sum(L[i, j] * U[j, k] for j in range(i))
+        for k in range(i, n):
+            L[k, i] = (A[k, i] - sum(L[k, j] * U[j, i] for j in range(i))) / U[i, i]
+
+    y = np.zeros(n)
+    for i in range(n):
+        y[i] = b[i] - sum(L[i, j] * y[j] for j in range(i))
+
+    x = np.zeros(n)
+    for i in range(n - 1, -1, -1):
+        x[i] = (y[i] - sum(U[i, j] * x[j] for j in range(i + 1, n))) / U[i, i]
+    return x
+
+# Метод Ньютона-Гаусса
+def gauss_newton(t, observed_I, observed_U, initial_guess, max_iter=10, tol=1e-6):
+    params = np.array(initial_guess)
+    for iteration in range(max_iter):
+        R, L, C = params
+        model_I, model_U = generate_data(t, R, L, C)
+
+        residuals = np.concatenate([observed_I - model_I, observed_U - model_U])
+
+        # Построение матрицы Якоби
+        J = np.zeros((2 * len(t), 3))
+        delta = 1e-6
+        for i, p in enumerate(params):
+            dp = np.zeros_like(params)
+            dp[i] = delta
+            model_I_plus, model_U_plus = generate_data(t, *(params + dp))
+            model_I_minus, model_U_minus = generate_data(t, *(params - dp))
+
+            J[:, i] = np.concatenate([(model_I_plus - model_I_minus) / (2 * delta),
+                                      (model_U_plus - model_U_minus) / (2 * delta)])
+
+        JTJ = J.T @ J
+        JTr = J.T @ residuals
+        delta_params = solve_linear_system(JTJ, JTr)
+        params += delta_params
+
+        if np.linalg.norm(delta_params) < tol:
+            break
+
+        print(f"Iteration {iteration + 1}, params: {params}")
+        line_model.set_ydata(model_I)
+        line_model2.set_ydata(model_U)
+        plt.draw()
+        plt.pause(1)
+
+    return params
 
 # Главная функция
 if __name__ == "__main__":
-    start = 0
-    end = 300
-    h = 0.1
+    start, end, h = 0, 300, 0.1
     points = np.arange(start, end, h)
 
-    # Получаем начальные условия
-    V0, dVdt0 = initial_conditions(R_true,L_true,C_true)[0]
-    q0, I0 = initial_conditions(R_true,L_true,C_true)[1]
+    noise_data_I, noise_data_U = generate_data(points, R_true, L_true, C_true)
+    noise_data_I += np.random.normal(0, 0.01, size=len(noise_data_I))
+    noise_data_U += np.random.normal(0, 0.01, size=len(noise_data_U))
 
-    # Генерация "наблюдаемых" данных с возмущенными параметрами
-    results_U_obs = np.zeros((len(points), 2))
-    results_I_obs = np.zeros((len(points), 2))
-    results_U_obs[0] = [V0, dVdt0]
-    results_I_obs[0] = [q0, I0]
+    initial_guess = [R_true * uniform(0.99, 1.01), L_true * uniform(0.99, 1.01), C_true * uniform(0.99, 1.01)]
+    print(f"Initial guess: {initial_guess}")
 
-    for i in range(1, len(points)):
-        results_I_obs[i] = rk4_step_I(results_I_obs[i - 1], h, points[i], R_obs, L_obs, C_obs)
-        results_U_obs[i] = rk4_step_U(results_U_obs[i - 1], h, points[i], R_obs, L_obs, C_obs)
-
-    # Добавляем шум
-    noise_data_I = results_I_obs[:, 0] + np.random.normal(0, 0.1, size=len(results_I_obs[:, 0]))
-    noise_data_U = results_U_obs[:, 0] + np.random.normal(0, 0.1, size=len(results_U_obs[:, 0]))
-    
-    
-    
-    # Графики
     plt.figure(figsize=(12, 6))
-    plt.plot(points, noise_data_I, label="Наблюдаемый ток с шумом")
-    plt.plot(points, noise_data_U, label="Наблюдаемое напряжение с шумом")
-    line_model, = plt.plot(points, np.zeros_like(points), label="Модельный ток", color='blue')
-    line_model2, = plt.plot(points, np.zeros_like(points), label="Модельное напряжение", color='red')
-
+    plt.plot(points, noise_data_I, label="Наблюдаемый ток")
+    plt.plot(points, noise_data_U, label="Наблюдаемое напряжение")
+    line_model, = plt.plot(points, np.zeros_like(points), '--', label="Модельный ток", color='blue')
+    line_model2, = plt.plot(points, np.zeros_like(points), '--', label="Модельное напряжение", color='red')
     plt.legend()
     plt.grid()
-    sleep(5)
-    # Начальные приближения для оптимизации
-    params_initial = [15, 320, 0.1]  # Начальные догадки
 
-    # Решаем обратную задачу методом Гаусса-Ньютона
-    result = least_squares(residuals, params_initial, args=(points, noise_data_I, noise_data_U))
-
-    # Выводим восстановленные параметры
-    R_fit, L_fit, C_fit = result.x
-    print(f"Восстановленные параметры: R = {R_fit:.4f}, L = {L_fit:.4f}, C = {C_fit:.6f}")
-
+    fitted_params = gauss_newton(points, noise_data_I, noise_data_U, initial_guess)
+    print(f"Recovered parameters: R = {fitted_params[0]:.4f}, L = {fitted_params[1]:.4f}, C = {fitted_params[2]:.6f}")
     plt.show()
