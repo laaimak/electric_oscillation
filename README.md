@@ -140,7 +140,7 @@ $\\ \cfrac{d^2V}{dt^2} + \cfrac{1}{R} \cdot \cfrac{dV}{dt} + \cfrac{V}{L} = I_{0
 
 ```bash
 Recovered parameters (U): R = 10.9999, L = 99.9535, C = 0.015576
-Recovered parameters (U): R = 10.9999, L = 99.9535, C = 0.015576
+Recovered parameters (I): R = 10.9974, L = 99.9501, C = 0.015000
 
 
 ```
