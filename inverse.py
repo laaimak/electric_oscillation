@@ -85,26 +85,25 @@ def solve_linear_system(A, b):
         x[i] = (y[i] - sum(U[i, j] * x[j] for j in range(i + 1, n))) / U[i, i]
     return x
 
-# Метод Ньютона-Гаусса
-def gauss_newton(t, observed_I, observed_U, initial_guess, max_iter=10, tol=1e-6):
+# Метод Ньютона-Гаусса: только для тока
+def gauss_newton_I(t, observed_I, initial_guess, max_iter=10, tol=1e-6):
     params = np.array(initial_guess)
     for iteration in range(max_iter):
         R, L, C = params
-        model_I, model_U = generate_data(t, R, L, C)
+        model_I, _ = generate_data(t, R, L, C)
 
-        residuals = np.concatenate([observed_I - model_I, observed_U - model_U])
+        residuals = observed_I - model_I
 
         # Построение матрицы Якоби
-        J = np.zeros((2 * len(t), 3))
+        J = np.zeros((len(t), 3))
         delta = 1e-6
         for i, p in enumerate(params):
             dp = np.zeros_like(params)
             dp[i] = delta
-            model_I_plus, model_U_plus = generate_data(t, *(params + dp))
-            model_I_minus, model_U_minus = generate_data(t, *(params - dp))
+            model_I_plus, _ = generate_data(t, *(params + dp))
+            model_I_minus, _ = generate_data(t, *(params - dp))
 
-            J[:, i] = np.concatenate([(model_I_plus - model_I_minus) / (2 * delta),
-                                      (model_U_plus - model_U_minus) / (2 * delta)])
+            J[:, i] = (model_I_plus - model_I_minus) / (2 * delta)
 
         JTJ = J.T @ J
         JTr = J.T @ residuals
@@ -114,19 +113,57 @@ def gauss_newton(t, observed_I, observed_U, initial_guess, max_iter=10, tol=1e-6
         if np.linalg.norm(delta_params) < tol:
             break
 
-        print(f"Iteration {iteration + 1}, params: {params}")
+        print(f"Iteration {iteration + 1} (I), params: {params}")
         line_model.set_ydata(model_I)
+        plt.draw()
+        plt.pause(1)
+
+    return params
+
+
+# Метод Ньютона-Гаусса: только для напряжения
+def gauss_newton_U(t, observed_U, initial_guess, max_iter=10, tol=1e-6):
+    params = np.array(initial_guess)
+    for iteration in range(max_iter):
+        R, L, C = params
+        _, model_U = generate_data(t, R, L, C)
+
+        residuals = observed_U - model_U
+
+        # Построение матрицы Якоби
+        J = np.zeros((len(t), 3))
+        delta = 1e-6
+        for i, p in enumerate(params):
+            dp = np.zeros_like(params)
+            dp[i] = delta
+            _, model_U_plus = generate_data(t, *(params + dp))
+            _, model_U_minus = generate_data(t, *(params - dp))
+
+            J[:, i] = (model_U_plus - model_U_minus) / (2 * delta)
+
+        JTJ = J.T @ J
+        JTr = J.T @ residuals
+        delta_params = solve_linear_system(JTJ, JTr)
+        params += delta_params
+
+        if np.linalg.norm(delta_params) < tol:
+            break
+
+        print(f"Iteration {iteration + 1} (U), params: {params}")
         line_model2.set_ydata(model_U)
         plt.draw()
         plt.pause(1)
 
     return params
 
+
+# Главная функция
 # Главная функция
 if __name__ == "__main__":
     start, end, h = 0, 300, 0.1
     points = np.arange(start, end, h)
 
+    # Генерация наблюдаемых данных
     noise_data_I, noise_data_U = generate_data(points, R_true, L_true, C_true)
     noise_data_I += np.random.normal(0, 0.01, size=len(noise_data_I))
     noise_data_U += np.random.normal(0, 0.01, size=len(noise_data_U))
@@ -134,14 +171,30 @@ if __name__ == "__main__":
     initial_guess = [R_true * uniform(0.99, 1.01), L_true * uniform(0.99, 1.01), C_true * uniform(0.99, 1.01)]
     print(f"Initial guess: {initial_guess}")
 
+    # Визуализация данных
     plt.figure(figsize=(12, 6))
-    plt.plot(points, noise_data_I, label="Наблюдаемый ток")
-    plt.plot(points, noise_data_U, label="Наблюдаемое напряжение")
-    line_model, = plt.plot(points, np.zeros_like(points), '--', label="Модельный ток", color='blue')
-    line_model2, = plt.plot(points, np.zeros_like(points), '--', label="Модельное напряжение", color='red')
+
+    # Наблюдаемые данные
+    plt.plot(points, noise_data_I, label="Наблюдаемый ток", color='cyan', linewidth=1.5)
+    plt.plot(points, noise_data_U, label="Наблюдаемое напряжение", color='orange', linewidth=1.5)
+
+    # Модельные данные
+    line_model, = plt.plot(points, np.zeros_like(points), '--', label="Модельный ток", color='blue', linewidth=2)
+    line_model2, = plt.plot(points, np.zeros_like(points), '--', label="Модельное напряжение", color='red', linewidth=2)
+
     plt.legend()
     plt.grid()
+    plt.xlabel("Время (t)")
+    plt.ylabel("Амплитуда")
+    plt.title("Сравнение наблюдаемых и модельных данных для тока и напряжения")
 
-    fitted_params = gauss_newton(points, noise_data_I, noise_data_U, initial_guess)
-    print(f"Recovered parameters: R = {fitted_params[0]:.4f}, L = {fitted_params[1]:.4f}, C = {fitted_params[2]:.6f}")
+    # Запуск метода Ньютона-Гаусса для тока и напряжения
+    print("\nВосстановление параметров по току:")
+    fitted_params_I = gauss_newton_I(points, noise_data_I, initial_guess)
+    print(f"Recovered parameters (I): R = {fitted_params_I[0]:.4f}, L = {fitted_params_I[1]:.4f}, C = {fitted_params_I[2]:.6f}")
+
+    print("\nВосстановление параметров по напряжению:")
+    fitted_params_U = gauss_newton_U(points, noise_data_U, initial_guess)
+    print(f"Recovered parameters (U): R = {fitted_params_U[0]:.4f}, L = {fitted_params_U[1]:.4f}, C = {fitted_params_U[2]:.6f}")
+
     plt.show()
